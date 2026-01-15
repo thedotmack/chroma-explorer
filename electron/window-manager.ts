@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /**
- * Set up Content Security Policy for a window session
+ * Set up Content Security Policy and security headers for a window session
  */
 function setupCSP(windowSession: Electron.Session): void {
   windowSession.webRequest.onHeadersReceived((details, callback) => {
@@ -20,13 +20,23 @@ function setupCSP(windowSession: Electron.Session): void {
           [
             "default-src 'self'",
             "script-src 'self'",
-            "style-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'", // Required for Tailwind CSS
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
-            "connect-src 'self' http: https: ws: wss:",
+            "connect-src 'self' http: https: ws: wss:", // Allow ChromaDB connections
             "worker-src 'self' blob:",
+            "object-src 'none'", // Disable plugins
+            "base-uri 'self'", // Restrict base tag
+            "form-action 'self'", // Restrict form submissions
+            "frame-ancestors 'none'", // Prevent embedding
+            "upgrade-insecure-requests", // Upgrade HTTP to HTTPS where possible
           ].join('; ')
-        ]
+        ],
+        // Additional security headers
+        'X-Content-Type-Options': ['nosniff'],
+        'X-Frame-Options': ['DENY'],
+        'X-XSS-Protection': ['1; mode=block'],
+        'Referrer-Policy': ['no-referrer'],
       }
     })
   })
