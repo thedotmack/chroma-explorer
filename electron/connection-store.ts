@@ -1,4 +1,6 @@
 import Store from 'electron-store'
+import { app } from 'electron'
+import { createHash } from 'crypto'
 import { ConnectionProfile, EmbeddingFunctionOverride } from './types'
 
 interface StoreSchema {
@@ -9,6 +11,17 @@ interface StoreSchema {
   embeddingOverrides: Record<string, EmbeddingFunctionOverride>
 }
 
+/**
+ * Generate a device-specific encryption key for secure storage.
+ * Uses machine ID and app path to create a unique key per installation.
+ */
+function generateEncryptionKey(): string {
+  const machineId = require('node-machine-id').machineIdSync()
+  const appPath = app.getPath('userData')
+  const combined = `${machineId}:${appPath}:chroma-explorer-connections-v1`
+  return createHash('sha256').update(combined).digest('hex')
+}
+
 const store = new Store<StoreSchema>({
   name: 'chroma-connections',
   defaults: {
@@ -16,7 +29,7 @@ const store = new Store<StoreSchema>({
     lastActiveProfileId: null,
     embeddingOverrides: {},
   },
-  encryptionKey: 'chroma-explorer-obfuscation-key-v1',
+  encryptionKey: generateEncryptionKey(),
 })
 
 export class ConnectionStore {

@@ -12,6 +12,7 @@ import { windowManager } from './window-manager'
 import { createApplicationMenu } from './menu'
 import { ConnectionProfile, SearchDocumentsParams, UpdateDocumentParams, CreateDocumentParams, DeleteDocumentsParams, CreateDocumentsBatchParams, CreateCollectionParams, CopyCollectionParams } from './types'
 import { initAutoUpdater, checkForUpdates } from './auto-updater'
+import { isValidCollectionName, isValidDocumentId, isValidProfileId } from './input-validation'
 
 // Inject stored API keys into process.env at startup
 settingsStore.injectIntoProcessEnv()
@@ -53,6 +54,14 @@ ipcMain.handle('chromadb:listCollections', async (_event, profileId: string) => 
 
 ipcMain.handle('chromadb:getDocuments', async (_event, profileId: string, collectionName: string) => {
   try {
+    // Validate inputs
+    if (!isValidProfileId(profileId)) {
+      return { success: false, error: 'Invalid profile ID' }
+    }
+    if (!isValidCollectionName(collectionName)) {
+      return { success: false, error: 'Invalid collection name' }
+    }
+
     const service = chromaDBConnectionPool.getConnection(profileId)
     if (!service) {
       return { success: false, error: 'Not connected to ChromaDB' }
@@ -159,6 +168,14 @@ ipcMain.handle('chromadb:createCollection', async (_event, profileId: string, pa
 
 ipcMain.handle('chromadb:deleteCollection', async (_event, profileId: string, collectionName: string) => {
   try {
+    // Validate inputs
+    if (!isValidProfileId(profileId)) {
+      return { success: false, error: 'Invalid profile ID' }
+    }
+    if (!isValidCollectionName(collectionName)) {
+      return { success: false, error: 'Invalid collection name' }
+    }
+
     const service = chromaDBConnectionPool.getConnection(profileId)
     if (!service) {
       return { success: false, error: 'Not connected to ChromaDB' }
@@ -524,6 +541,17 @@ ipcMain.handle('settings:openWindow', async () => {
 // Shell IPC handlers
 ipcMain.handle('shell:openExternal', async (_event, url: string) => {
   try {
+    // Validate URL to prevent arbitrary protocol execution
+    if (!url || typeof url !== 'string') {
+      return { success: false, error: 'Invalid URL' }
+    }
+
+    // Only allow http and https protocols for security
+    const parsedUrl = new URL(url)
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return { success: false, error: 'Only HTTP and HTTPS URLs are allowed' }
+    }
+
     await shell.openExternal(url)
     return { success: true }
   } catch (error) {

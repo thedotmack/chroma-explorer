@@ -90,6 +90,7 @@
     "electron-store": "^11.0.2",
     "electron-updater": "^6.7.3",
     "lucide-react": "^0.562.0",
+    "node-machine-id": "^1.1.12",
     "onnxruntime-node": "^1.23.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

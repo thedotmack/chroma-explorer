@@ -1,4 +1,6 @@
 import Store from 'electron-store'
+import { app } from 'electron'
+import { createHash } from 'crypto'
 
 export interface ApiKeys {
   OPENAI_API_KEY?: string
@@ -17,12 +19,23 @@ interface SettingsSchema {
   apiKeys: ApiKeys
 }
 
+/**
+ * Generate a device-specific encryption key for secure storage.
+ * Uses machine ID and app path to create a unique key per installation.
+ */
+function generateEncryptionKey(): string {
+  const machineId = require('node-machine-id').machineIdSync()
+  const appPath = app.getPath('userData')
+  const combined = `${machineId}:${appPath}:chroma-explorer-v1`
+  return createHash('sha256').update(combined).digest('hex')
+}
+
 const store = new Store<SettingsSchema>({
   name: 'chroma-settings',
   defaults: {
     apiKeys: {},
   },
-  encryptionKey: 'chroma-explorer-settings-key-v1',
+  encryptionKey: generateEncryptionKey(),
 })
 
 export class SettingsStore {
